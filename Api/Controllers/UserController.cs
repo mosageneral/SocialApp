@@ -2,6 +2,7 @@
 using BL.Infrastructure;
 using BL.Security;
 using DL.DTO;
+using DL.MailModels;
 using Helper;
 using Helpers;
 using Microsoft.AspNetCore.Authorization;
@@ -9,10 +10,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using MimeKit;
 using Model.ApiModels;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace Api.Controllers
@@ -28,12 +32,15 @@ namespace Api.Controllers
         private readonly IHostingEnvironment _hostingEnvironment;
 
         private readonly IMapper _mapper;
-        public UserController(IMapper mapper, IHostingEnvironment hostingEnvironment,IUnitOfWork uow, IAuthenticateService authService, IOptions<TokenManagement> tokenManagement, IHostingEnvironment env)
+
+        private readonly IMailService _mailService;
+        public UserController(IMailService mailService,IMapper mapper, IHostingEnvironment hostingEnvironment,IUnitOfWork uow, IAuthenticateService authService, IOptions<TokenManagement> tokenManagement, IHostingEnvironment env)
         {
             _uow = uow;
             _authService = authService;
             _hostingEnvironment = _hostingEnvironment;
             _mapper = mapper;
+            _mailService = mailService;
         }
         /// <summary>
         /// Log in user
@@ -76,6 +83,7 @@ namespace Api.Controllers
                     User.Password = EncryptANDDecrypt.EncryptText(request.Password);
                     _uow.UserRepository.Add(User);
                     _uow.Save();
+                    _mailService.SendWelcomeEmailAsync(new WelcomeRequest { ToEmail = User.Bio, UserName = User.UserName });
                     return Ok(User);
                 }
                 catch (Exception ex)
@@ -87,5 +95,6 @@ namespace Api.Controllers
             }
             return BadRequest("Invalid Username or Password");
         }
+   
     }
 }

@@ -23,6 +23,7 @@ using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DL.Mapping;
+using DL.MailModels;
 
 namespace Api
 {
@@ -38,6 +39,7 @@ namespace Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<IMailService, MailService>();
             var mapperConfig = new MapperConfiguration(mc =>
             {
                 mc.AddProfile(new MappingConfigration());
