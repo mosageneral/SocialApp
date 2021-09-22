@@ -103,7 +103,7 @@ namespace Api
             services.AddScoped<IUserManagementService, UserManagementService>();
 
             #endregion
-
+            services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

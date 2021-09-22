@@ -34,10 +34,10 @@ namespace BL.Security
         public User AuthenticateUser(ApiLoginModelDTO request, out string token)
         {
             token = string.Empty;
-            var user = _userManagementService.IsValidUser(request.UserName, request.Password);
+            var user = _userManagementService.IsValidUser(request.Email, request.Password);
             if (user != null)
             {
-                var claims = new[] {new Claim(ClaimTypes.Name, request.UserName)};
+                var claims = new[] {new Claim(ClaimTypes.Name, request.Email)};
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenManagement.Secret));
                 var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
                 var expireDate = DateTime.Now.AddDays(_tokenManagement.AccessExpiration);
@@ -67,7 +67,7 @@ namespace BL.Security
 
         public User IsValidUser(string userName, string password)
         {
-            var user = _uow.UserRepository.GetMany(ent => ent.UserName.ToLower() == userName.ToLower().Trim() &&
+            var user = _uow.UserRepository.GetMany(ent => ent.Email.ToLower() == userName.ToLower().Trim() &&
             ent.Password == EncryptANDDecrypt.EncryptText(password) ).ToHashSet();
             return user.Count() == 1 ? user.FirstOrDefault() : null;
         }

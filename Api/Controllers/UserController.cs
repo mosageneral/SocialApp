@@ -56,6 +56,10 @@ namespace Api.Controllers
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
             var user = _authService.AuthenticateUser(request, out string token);
+            if (!user.IsActive)
+            {
+                return BadRequest("Email Not Active");
+            }
             if (user != null)
             {
                 user.Password = null;
@@ -75,6 +79,10 @@ namespace Api.Controllers
             {
                 try
                 {
+                    if (CheckEmail(request.Email))
+                    {
+                        return BadRequest("Email Already Exists");
+                    }
                     var ProfileImage = FileHelper.FileUpload(request.UserPic, _hostingEnvironment, Constants.UserUploadFolder);
                     var CovorImage = FileHelper.FileUpload(request.CovorPic, _hostingEnvironment, Constants.UserUploadFolder);
                     var User = _mapper.Map<DL.Entities.User>(request);
@@ -83,7 +91,7 @@ namespace Api.Controllers
                     User.Password = EncryptANDDecrypt.EncryptText(request.Password);
                     _uow.UserRepository.Add(User);
                     _uow.Save();
-                    _mailService.SendWelcomeEmailAsync(new WelcomeRequest { ToEmail = User.Bio, UserName = User.UserName });
+                   var email =  _mailService.SendWelcomeEmailAsync(new WelcomeRequest { ToEmail = User.Bio, UserName = User.Email });
                     return Ok(User);
                 }
                 catch (Exception ex)
@@ -95,6 +103,36 @@ namespace Api.Controllers
             }
             return BadRequest("Invalid Username or Password");
         }
-   
+        [NonAction]
+        public bool CheckEmail(string Email)
+        {
+           var IsEmailExist =  _uow.UserRepository.GetMany(a => a.Email.ToLower() == Email.ToLower()).FirstOrDefault();
+            if (IsEmailExist!=null )
+            {
+                return true;
+            }
+            return false;
+        }
+        [AllowAnonymous]
+        [HttpPost, Route("ActivateAccount")]
+        public IActionResult ActivateAccount([FromBody] int UserId)
+        {
+            try
+            {
+                var User = _uow.UserRepository.GetById(UserId);
+                User.IsActive = true;
+                _uow.UserRepository.Update(User);
+                _uow.Save();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.ToString());
+            }
+            
+           
+        }
+
     }
 }
