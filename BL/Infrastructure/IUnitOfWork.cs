@@ -7,7 +7,10 @@ namespace BL.Infrastructure
     {
         
         UserRepository UserRepository { get; }
-       
+        PostRepository PostRepository { get; }
+        CommentRepository CommentRepository { get; }
+        LikeRepository LikeRepository { get; }
+
 
 
 

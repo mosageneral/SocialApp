@@ -24,6 +24,7 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DL.Mapping;
 using DL.MailModels;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api
 {
@@ -105,9 +106,30 @@ namespace Api
             #endregion
             services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
             services.AddControllers();
-            services.AddSwaggerGen(c =>
+           
+            services.AddSwaggerGen(config => {
+                config.SwaggerDoc("v1", new OpenApiInfo() { Title = "WebAPI", Version = "v1" });
+                config.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer"
+                });
+                config.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Api", Version = "v1" });
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
             });
         }
 

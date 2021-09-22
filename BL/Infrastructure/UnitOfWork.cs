@@ -16,6 +16,12 @@ namespace BL.Infrastructure
 
         public UserRepository UserRepository => new UserRepository(_ctx);
 
+        public PostRepository PostRepository =>  new PostRepository(_ctx);
+
+        public CommentRepository CommentRepository =>  new CommentRepository(_ctx);
+
+        public LikeRepository LikeRepository =>  new LikeRepository(_ctx);
+
         public void Dispose()
         {
             _ctx.Dispose();
