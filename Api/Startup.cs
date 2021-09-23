@@ -105,8 +105,10 @@ namespace Api
 
             #endregion
             services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
-            services.AddControllers();
-           
+            services.AddControllers().AddNewtonsoftJson(options =>
+     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+ );
+
             services.AddSwaggerGen(config => {
                 config.SwaggerDoc("v1", new OpenApiInfo() { Title = "WebAPI", Version = "v1" });
                 config.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -144,11 +146,11 @@ namespace Api
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
 
             app.UseRouting();
             app.UseStaticFiles();
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
