@@ -50,8 +50,19 @@ namespace Api.Controllers
             {
                 try
                 {
-                    var Attachment = FileHelper.FileUpload(post.Attachment, _hostingEnvironment, Constants.UserUploadFolder);
                     var Post = _mapper.Map<Post>(post);
+
+                    if (post.Attachment != null)
+                    {
+                        var Attachments = FileHelper.FileUpload(post.Attachment, _hostingEnvironment, Constants.UserUploadFolder);
+                        Post.Attachment = Attachments;
+
+                    }
+                    else
+                    {
+                        Post.Attachment = "Null";
+                    }
+                    var Attachment = FileHelper.FileUpload(post.Attachment, _hostingEnvironment, Constants.UserUploadFolder);
 
                     Post.Date = DateTime.Now;
 
@@ -70,9 +81,33 @@ namespace Api.Controllers
             }
             return BadRequest(ModelState);
         }
+        [HttpGet, Route("TimeLine")]
+        [Authorize]
+        public IActionResult TimeLine(int UserId)
+        {
+            List<PostDTOback> UserPosts = new List<PostDTOback>();
+            var Posts = _uow.PostRepository.GetAll().Include(a => a.Comments).Include(a => a.Likes).Include(a => a.User).OrderByDescending(a => a.Date).ToHashSet();
+            foreach (var item in Posts)
+            {
+                var liked = _uow.LikeRepository.GetMany(a => a.PostId == item.Id && a.UserId == UserId).FirstOrDefault();
+                var Post = _mapper.Map<PostDTOback>(item);
 
+                if (liked == null)
+                {
+                    Post.Liked = false;
 
-        [HttpPost, Route("Comment")]
+                }
+                else
+                {
+                    Post.Liked = true;
+
+                }
+                UserPosts.Add(Post);
+            }
+            return Ok(UserPosts);
+        }
+
+            [HttpPost, Route("Comment")]
         [Authorize]
         public IActionResult Comment([FromForm] CommentDTO commentDTO)
         {
@@ -81,13 +116,24 @@ namespace Api.Controllers
                
                 try
                 {
-                    var Attachment = FileHelper.FileUpload(commentDTO.Attachment, _hostingEnvironment, Constants.UserUploadFolder);
+                   
                     var Comment = _mapper.Map<Comment>(commentDTO);
+                    if (commentDTO.Attachment != null)
+                    {
+                        var Attachment = FileHelper.FileUpload(commentDTO.Attachment, _hostingEnvironment, Constants.UserUploadFolder);
+                        Comment.Attachment = Attachment;
+
+                    }
+                    else
+                    {
+                        Comment.Attachment = "Null";
+                    }
                     Comment.Date = DateTime.Now;
-                    Comment.Attachment = Attachment;
                     _uow.CommentRepository.Add(Comment);
                     _uow.Save();
-                    return Ok(Comment);
+                    var C = _uow.CommentRepository.GetById(Comment.Id);
+
+                    return Ok(C);
                 }
                 catch (Exception ex)
                 {
@@ -106,11 +152,23 @@ namespace Api.Controllers
         {
             if (ModelState.IsValid)
             {
+                if (!IsLikedBefore(like))
+                {
                     var Like = _mapper.Map<Like>(like);
-                Like.Date = DateTime.Now;
-                _uow.LikeRepository.Add(Like);
-                _uow.Save();
-                return Ok(like) ;
+                    Like.Date = DateTime.Now;
+                    _uow.LikeRepository.Add(Like);
+                    _uow.Save();
+                    return Ok(new { Liked = true });
+
+                }
+                else
+                {
+                    var Like = _uow.LikeRepository.GetMany(a => a.PostId == like.PostId && a.UserId == like.UserId).FirstOrDefault();
+                    _uow.LikeRepository.Delete(Like.Id);
+                    _uow.Save();
+                    return Ok(new {Liked= false});
+                }
+                   
             }
             return BadRequest(ModelState);
         }
@@ -118,9 +176,80 @@ namespace Api.Controllers
         [Authorize]
         public IActionResult GetUserPost(int UserId)
         {
+            List<PostDTOback> UserPosts = new List<PostDTOback>();
+            var Posts = _uow.PostRepository.GetMany(a => a.UserId == UserId).Include(a=>a.Comments).Include(a => a.Likes).Include(a=>a.User).OrderByDescending(a=>a.Date).ToHashSet();
+            foreach (var item in Posts)
+            {
+                var liked = _uow.LikeRepository.GetMany(a => a.PostId == item.Id && a.UserId == UserId).FirstOrDefault();
+                    var Post = _mapper.Map<PostDTOback>(item);
 
-            var Posts = _uow.PostRepository.GetMany(a => a.UserId == UserId).Include(a=>a.Comments).Include(a => a.Likes).ToHashSet();
-            return Ok(Posts);
+                if (liked==null)
+                {
+                    Post.Liked = false;
+
+                }
+                else
+                {
+                    Post.Liked = true;
+
+                }
+                UserPosts.Add(Post);
+            }
+            return Ok(UserPosts);
+        }
+
+        [HttpGet, Route("GetPostComments")]
+        [Authorize]
+        public IActionResult GetPostComments(int PostId)
+        {
+            var Comments = _uow.CommentRepository.GetMany(a => a.PostId == PostId).Include(a=>a.User);
+            return Ok(Comments);
+        }
+
+
+        [HttpGet, Route("GetPost")]
+        [Authorize]
+        public IActionResult GetPost(int PostId)
+        {
+            var Post = _uow.PostRepository.GetMany(a => a.Id == PostId).Include(a => a.User).Include(a=>a.Likes).Include(a=>a.Comments.OrderByDescending(a=>a.Date)).OrderByDescending(a=>a.Id).ToHashSet();
+            foreach (var item in Post)
+            {
+                foreach (var Comment in item.Comments)
+                {
+                    Comment.User = _uow.UserRepository.GetById(Comment.UserId);
+                }
+            }
+            return Ok(Post);
+        }
+
+
+
+        [HttpPost, Route("checkLikedPost")]
+        [Authorize]
+        public IActionResult checkLikedPost(int UserId,int PostId)
+        {
+
+            var Liked = _uow.LikeRepository.GetMany(a => a.UserId == UserId&&a.PostId==PostId).FirstOrDefault();
+            if (Liked!=null)
+            {
+                return Ok(new {Liked=true });
+
+            }
+            return Ok(new { Liked = false });
+
+        }
+
+
+
+        [NonAction]
+        public bool IsLikedBefore(LikeDTO Like)
+        {
+            var like = _uow.LikeRepository.GetMany(a => a.PostId == Like.PostId && a.UserId == Like.UserId).FirstOrDefault();
+            if (like!=null)
+            {
+                return true;
+            }
+            return false;
         }
 
     }

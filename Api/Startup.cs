@@ -40,6 +40,12 @@ namespace Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }));
             services.AddTransient<IMailService, MailService>();
             var mapperConfig = new MapperConfiguration(mc =>
             {
@@ -147,8 +153,9 @@ namespace Api
 
             app.UseHttpsRedirection();
             app.UseAuthentication();
-
+         
             app.UseRouting();
+            app.UseCors("MyPolicy");
             app.UseStaticFiles();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

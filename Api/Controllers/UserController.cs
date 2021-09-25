@@ -6,6 +6,7 @@ using DL.MailModels;
 using Helper;
 using Helpers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +24,7 @@ namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("MyPolicy")]
     public class UserController : BaseController
     {
         private readonly IUnitOfWork _uow;
@@ -51,14 +53,19 @@ namespace Api.Controllers
         /// <response code="401">Unauthorized</response>
         [AllowAnonymous]
         [HttpPost, Route("LogIn")]
-        public IActionResult LogIn([FromBody] ApiLoginModelDTO request)
+        public IActionResult LogIn( ApiLoginModelDTO request)
         {
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
             var user = _authService.AuthenticateUser(request, out string token);
+            if (user==null)
+            {
+                return BadRequest("البريد الالكتروني او كلمة السر خطأ");
+
+            }
             if (!user.IsActive)
             {
-                return BadRequest("Email Not Active");
+                return BadRequest("الحساب غير مفعل توجه لبريدك الالكتروني للتفعيل");
             }
             if (user != null)
             {
@@ -69,7 +76,8 @@ namespace Api.Controllers
                     token
                 });
             }
-            return BadRequest("Invalid Username or Password");
+            return BadRequest("البريد الالكتروني او كلمة السر خطأ");
+
         }
         [AllowAnonymous]
         [HttpPost, Route("Register")]
@@ -132,6 +140,26 @@ namespace Api.Controllers
             }
             
            
+        }
+        [AllowAnonymous]
+        [HttpPost, Route("ActivateEmailAccount")]
+        public IActionResult ActivateEmailAccount(string Email)
+        {
+            try
+            {
+                var User = _uow.UserRepository.GetAll().Where(a=>a.Email.ToLower()==Email.ToLower()).FirstOrDefault();
+                User.IsActive = true;
+                _uow.UserRepository.Update(User);
+                _uow.Save();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.ToString());
+            }
+
+
         }
 
     }
