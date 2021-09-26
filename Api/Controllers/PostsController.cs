@@ -81,6 +81,25 @@ namespace Api.Controllers
             }
             return BadRequest(ModelState);
         }
+
+
+        [HttpGet, Route("(")]
+        [Authorize]
+        public IActionResult DeleteAllPosts()
+        {
+            
+            var posts = _uow.PostRepository.GetAll();
+            foreach (var item in posts)
+            {
+                _uow.CommentRepository.Delete(item.Id);
+                _uow.LikeRepository.Delete(item.Id);
+                _uow.PostRepository.Delete(item.Id);
+
+            }
+            _uow.Save();
+            return Ok();
+        }
+
         [HttpGet, Route("TimeLine")]
         [Authorize]
         public IActionResult TimeLine(int UserId)
