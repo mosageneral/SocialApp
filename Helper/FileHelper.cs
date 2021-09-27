@@ -27,6 +27,24 @@ namespace Helpers
             }
             return UniqeFileName;
         }
-
+        public static string DeleteFile(string FileName,string FolderFile)
+        {
+            try
+            {
+                var path = Path.Combine("wwwroot", FolderFile);
+                // Check if file exists with its full path    
+                if (File.Exists(Path.Combine(path, FileName)))
+                {
+                    // If file found, delete it    
+                    File.Delete(Path.Combine(path, FileName));
+                    return "File deleted.";
+                }
+                else return "File not found";
+            }
+            catch (IOException ioExp)
+            {
+               return ioExp.Message;
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ namespace DL.MailModels
     public class WelcomeRequest
     {
         public string ToEmail { get; set; }
+        public int Id { get; set; }
         public string UserName { get; set; }
     }
 }

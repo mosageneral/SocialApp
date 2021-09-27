@@ -99,7 +99,7 @@ namespace Api.Controllers
                     User.Password = EncryptANDDecrypt.EncryptText(request.Password);
                     _uow.UserRepository.Add(User);
                     _uow.Save();
-                   var email =  _mailService.SendWelcomeEmailAsync(new WelcomeRequest { ToEmail = User.Bio, UserName = User.Email });
+                   var email =  _mailService.SendWelcomeEmailAsync(new WelcomeRequest { ToEmail = User.Email, UserName = User.Email ,Id=User.Id});
                     return Ok(User);
                 }
                 catch (Exception ex)
@@ -122,8 +122,8 @@ namespace Api.Controllers
             return false;
         }
         [AllowAnonymous]
-        [HttpPost, Route("ActivateAccount")]
-        public IActionResult ActivateAccount([FromBody] int UserId)
+        [HttpGet, Route("ActivateAccount")]
+        public IActionResult ActivateAccount( int UserId)
         {
             try
             {
@@ -131,12 +131,12 @@ namespace Api.Controllers
                 User.IsActive = true;
                 _uow.UserRepository.Update(User);
                 _uow.Save();
-                return Ok();
+                return Content("Account Activated");
             }
             catch (Exception ex)
             {
 
-                return BadRequest(ex.ToString());
+                return Content(ex.ToString());
             }
             
            

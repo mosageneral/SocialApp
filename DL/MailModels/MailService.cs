@@ -57,7 +57,7 @@ namespace DL.MailModels
                 StreamReader str = new StreamReader(FilePath);
                 string MailText = str.ReadToEnd();
                 str.Close();
-                MailText = MailText.Replace("[username]", request.UserName).Replace("[email]", request.ToEmail);
+                MailText = MailText.Replace("[username]", request.UserName).Replace("[email]", request.ToEmail).Replace("[ID]",request.Id.ToString());
                 var email = new MimeMessage();
                 email.Sender = MailboxAddress.Parse(_mailSettings.Mail);
                 email.To.Add(MailboxAddress.Parse(request.ToEmail));

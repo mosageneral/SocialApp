@@ -157,6 +157,7 @@ namespace Api
             app.UseCors("MyPolicy");
             app.UseStaticFiles();
             app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

@@ -83,6 +83,36 @@ namespace Api.Controllers
         }
 
 
+        [HttpPost, Route("DeletePost")]
+        [Authorize]
+        public IActionResult DeletePost(int PostId)
+        {
+            List<string> DeletedFiles = new  List<string>();
+            var Post = _uow.PostRepository.GetById(PostId);
+            DeletedFiles.Add(Post.Attachment);
+          var Comments =  _uow.CommentRepository.GetAll().Where(a => a.PostId == PostId);
+          var likes =  _uow.LikeRepository.GetAll().Where(a => a.PostId == PostId);
+            foreach (var item in Comments)
+            {
+                DeletedFiles.Add(item.Attachment);
+                _uow.CommentRepository.Delete(item.Id);
+            }
+            foreach (var item in likes)
+            {
+               
+                _uow.CommentRepository.Delete(item.Id);
+            }
+            _uow.PostRepository.Delete(PostId);
+            _uow.Save();
+            foreach (var item in DeletedFiles)
+            {
+               var Deleted =  FileHelper.DeleteFile(item, Constants.UserUploadFolder);
+            }
+
+            return Ok(PostId);
+        }
+
+
         [HttpGet, Route("(")]
         [Authorize]
         public IActionResult DeleteAllPosts()
